@@ -56,6 +56,11 @@
  */
 - (id)initWithCancelButtonTitle:(NSString *)cancelTitle;
 
+
+- (id)initWithCancelButtonTitle:(NSString *)cancelTitle
+          captureDevicePosition:(AVCaptureDevicePosition)devicePosition
+               showSwitchButton:(BOOL)showSwitchButton;
+
 /**
  * @abstract Creates a view controller to read QRCodes from a displayed
  * video preview and a cancel button to be go back.
@@ -64,6 +69,20 @@
  * @since 1.0.0
  */
 + (instancetype)readerWithCancelButtonTitle:(NSString *)cancelTitle;
+
+/**
+ * @abstract Creates a view controller to read QRCodes from a displayed
+ * video preview
+ */
++ (instancetype)reader;
+
+/**
+ * @abstract Creates a view controller to read QRCodes from a displayed
+ * video preview
+ * @param devicePosition   The initial devicePosition.
+ * @param showSwitchButton YES if you want to support devicePosition switching.
+ */
++ (instancetype)readerWithCaptureDevicePosition:(AVCaptureDevicePosition)devicePosition showSwitchButton:(BOOL)showSwitchButton;
 
 #pragma mark - Checking the Metadata Items Types
 /** @name Checking the Metadata Items Types */

@@ -49,19 +49,28 @@
 
 - (id)init
 {
-  return [self initWithCancelButtonTitle:NSLocalizedString(@"Cancel", @"Cancel")];
+  return [self initWithCancelButtonTitle:nil captureDevicePosition:AVCaptureDevicePositionBack showSwitchButton:YES];
 }
 
 - (id)initWithCancelButtonTitle:(NSString *)cancelTitle
+{
+  return [self initWithCancelButtonTitle:cancelTitle captureDevicePosition:AVCaptureDevicePositionBack showSwitchButton:YES];
+}
+
+- (id)initWithCancelButtonTitle:(NSString *)cancelTitle captureDevicePosition:(AVCaptureDevicePosition)devicePosition showSwitchButton:(BOOL)showSwitchButton
 {
   if ((self = [super init])) {
     self.view.backgroundColor = [UIColor blackColor];
     
     [self setupAVComponents];
     [self configureDefaultComponents];
-    [self setupUIComponentsWithCancelButtonTitle:cancelTitle];
+    [self setupUIComponentsWithCancelButtonTitle:cancelTitle showSwitchButton:showSwitchButton];
     [self setupAutoLayoutConstraints];
-    
+
+    if (devicePosition == AVCaptureDevicePositionFront) {
+      [self switchDeviceInput];
+    }
+
     [_cameraView.layer insertSublayer:self.previewLayer atIndex:0];
   }
   return self;
@@ -69,7 +78,17 @@
 
 + (instancetype)readerWithCancelButtonTitle:(NSString *)cancelTitle
 {
-  return [[self alloc] initWithCancelButtonTitle:cancelTitle];
+  return [[self alloc] initWithCancelButtonTitle:cancelTitle captureDevicePosition:AVCaptureDevicePositionBack showSwitchButton:YES];
+}
+
++ (instancetype)reader
+{
+  return [[self alloc] initWithCancelButtonTitle:nil captureDevicePosition:AVCaptureDevicePositionBack showSwitchButton:YES];
+}
+
++ (instancetype)readerWithCaptureDevicePosition:(AVCaptureDevicePosition)devicePosition showSwitchButton:(BOOL)showSwitchButton
+{
+  return [[self alloc] initWithCancelButtonTitle:nil captureDevicePosition:devicePosition showSwitchButton:showSwitchButton];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -134,39 +153,47 @@
 
 #pragma mark - Initializing the AV Components
 
-- (void)setupUIComponentsWithCancelButtonTitle:(NSString *)cancelButtonTitle
+- (void)setupUIComponentsWithCancelButtonTitle:(NSString *)cancelButtonTitle showSwitchButton:(BOOL)showSwitchButton
 {
   self.cameraView                                       = [[QRCodeReaderView alloc] init];
   _cameraView.translatesAutoresizingMaskIntoConstraints = NO;
   _cameraView.clipsToBounds                             = YES;
   [self.view addSubview:_cameraView];
   
-  if (_frontDevice) {
+  if (_frontDevice && showSwitchButton) {
     _switchCameraButton = [[QRCameraSwitchButton alloc] init];
     [_switchCameraButton setTranslatesAutoresizingMaskIntoConstraints:false];
     [_switchCameraButton addTarget:self action:@selector(switchCameraAction:) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_switchCameraButton];
   }
-  
-  self.cancelButton                                       = [[UIButton alloc] init];
-  _cancelButton.translatesAutoresizingMaskIntoConstraints = NO;
-  [_cancelButton setTitle:cancelButtonTitle forState:UIControlStateNormal];
-  [_cancelButton setTitleColor:[UIColor grayColor] forState:UIControlStateHighlighted];
-  [_cancelButton addTarget:self action:@selector(cancelAction:) forControlEvents:UIControlEventTouchUpInside];
-  [self.view addSubview:_cancelButton];
+
+  if (cancelButtonTitle) {
+    self.cancelButton                                       = [[UIButton alloc] init];
+    _cancelButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [_cancelButton setTitle:cancelButtonTitle forState:UIControlStateNormal];
+    [_cancelButton setTitleColor:[UIColor grayColor] forState:UIControlStateHighlighted];
+    [_cancelButton addTarget:self action:@selector(cancelAction:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:_cancelButton];
+  }
 }
 
 - (void)setupAutoLayoutConstraints
 {
-  NSDictionary *views = NSDictionaryOfVariableBindings(_cameraView, _cancelButton);
-  
-  [self.view addConstraints:
-   [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_cameraView][_cancelButton(40)]|" options:0 metrics:nil views:views]];
+  NSDictionary *views = _cancelButton ? NSDictionaryOfVariableBindings(_cameraView, _cancelButton) : NSDictionaryOfVariableBindings(_cameraView);
+
+  if (_cancelButton) {
+    [self.view addConstraints:
+     [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_cameraView][_cancelButton(40)]|" options:0 metrics:nil views:views]];
+    [self.view addConstraints:
+     [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[_cancelButton]-|" options:0 metrics:nil views:views]];
+  } else {
+    [self.view addConstraints:
+   [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[_cameraView]|" options:0 metrics:nil views:views]];
+  }
+
   [self.view addConstraints:
    [NSLayoutConstraint constraintsWithVisualFormat:@"H:|[_cameraView]|" options:0 metrics:nil views:views]];
-  [self.view addConstraints:
-   [NSLayoutConstraint constraintsWithVisualFormat:@"H:|-[_cancelButton]-|" options:0 metrics:nil views:views]];
-  
+
   if (_switchCameraButton) {
     NSDictionary *switchViews = NSDictionaryOfVariableBindings(_switchCameraButton);
     

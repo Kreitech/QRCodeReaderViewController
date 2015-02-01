@@ -39,7 +39,7 @@
     static dispatch_once_t onceToken;
     
     dispatch_once(&onceToken, ^{
-        reader                        = [QRCodeReaderViewController new];
+        reader                        = [QRCodeReaderViewController readerWithCaptureDevicePosition:AVCaptureDevicePositionFront showSwitchButton:NO];
         reader.modalPresentationStyle = UIModalPresentationFormSheet;
     });
     reader.delegate = self;
